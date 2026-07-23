@@ -34,7 +34,6 @@ fun CorrectionNoteScreen(
             .fillMaxSize()
             .background(Color(0xFFF8FAFC))
     ) {
-        // 1. 헤더 타이틀 Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,7 +78,7 @@ fun CorrectionNoteScreen(
             ) {
                 items(
                     items = correctionList,
-                    key = { item -> item.id } // LazyColumn 성능 최적화를 위한 키 설정
+                    key = { item -> item.id }
                 ) { item ->
                     CorrectionItemCard(
                         item = item,

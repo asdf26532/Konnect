@@ -36,7 +36,7 @@ fun MessageBubble(
             Spacer(modifier = Modifier.width(6.dp))
             Text(text = message.timestamp, fontSize = 10.sp, color = Color(0xFF94A3B8))
         } else {
-            // [나일 때] 시간 표시가 왼쪽에 먼저 붙음
+
             Text(text = message.timestamp, fontSize = 10.sp, color = Color(0xFF94A3B8))
             Spacer(modifier = Modifier.width(6.dp))
             MessageCard(message = message, isMe = isMe, onLongClick = onLongClick)

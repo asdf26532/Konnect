@@ -29,7 +29,6 @@ fun ChatRoomScreen(
 {
     val context = LocalContext.current
 
-    // 임시 더미 대화 데이터 상태 관리
     val messages = remember {
         mutableStateListOf(
             ChatMessage("1", "other", "안녕하세요! 한국어 공부하고 싶어요.", "오후 5:10"),
