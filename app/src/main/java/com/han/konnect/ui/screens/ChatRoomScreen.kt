@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,17 +18,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.han.konnect.data.entity.CorrectionEntity
 import com.han.konnect.data.model.ChatMessage
 import com.han.konnect.ui.components.MessageBubble
 import com.han.konnect.ui.theme.PurpleMain
+import com.han.konnect.ui.components.CorrectionInputDialog
+import com.han.konnect.ui.viewmodel.CorrectionViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatRoomScreen(
     userName: String = "Sarah",
-    onBackClick: () -> Unit = {})
-{
+    onBackClick: () -> Unit = {},
+    viewModel: CorrectionViewModel = viewModel()
+){
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     val messages = remember {
         mutableStateListOf(
@@ -38,11 +50,20 @@ fun ChatRoomScreen(
     }
 
     var inputText by remember { mutableStateOf("") }
+    var selectedMessageForCorrection by remember { mutableStateOf<ChatMessage?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = userName, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "뒤로가기"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
@@ -105,10 +126,43 @@ fun ChatRoomScreen(
                 MessageBubble(
                     message = message,
                     onLongClick = {
-                        Toast.makeText(context, "💡 문장 복사 및 AI 한국어 교정 분석을 준비 중입니다!", Toast.LENGTH_SHORT).show()
+                        if (message.senderId != "me") {
+                            selectedMessageForCorrection = message
+                        } else {
+                            Toast.makeText(context, "내가 보낸 문장입니다.", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 )
             }
         }
+    }
+
+    selectedMessageForCorrection?.let { message ->
+        CorrectionInputDialog(
+            originalText = message.text,
+            userName = userName,
+            onDismiss = { selectedMessageForCorrection = null },
+            onSubmit = { correctedText, reason ->
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                viewModel.insertCorrection(
+                    CorrectionEntity(
+                        originalText = message.text,
+                        correctedText = correctedText,
+                        reason = reason,
+                        userName = userName,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "✏️ 오답노트에 성공적으로 추가되었습니다!",
+                        duration = SnackbarDuration.Short
+                    )
+                }
+
+                selectedMessageForCorrection = null
+            }
+        )
     }
 }
