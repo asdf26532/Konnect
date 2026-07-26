@@ -3,69 +3,59 @@ package com.han.konnect.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.han.konnect.data.AppDatabase
+import com.han.konnect.data.db.AppDatabase
 import com.han.konnect.data.entity.CorrectionEntity
+import com.han.konnect.data.model.AICorrectionResponse
+import com.han.konnect.data.repository.AIRepository
 import com.han.konnect.data.repository.CorrectionRepository
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+sealed interface AIState {
+    object Idle : AIState
+    object Loading : AIState
+    data class Success(val data: AICorrectionResponse) : AIState
+    data class Error(val message: String) : AIState
+}
 
 class CorrectionViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: CorrectionRepository
+    private val db = AppDatabase.getDatabase(application)
+    private val repository = CorrectionRepository(db.correctionDao())
+    private val aiRepository = AIRepository()
 
-    val corrections: StateFlow<List<CorrectionEntity>>
+    val allCorrections = repository.allCorrections
 
-    init {
-        val dao = AppDatabase.getDatabase(application).correctionDao()
-        repository = CorrectionRepository(dao)
-
-        corrections = repository.allCorrections
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
-
-        seedInitialDataIfEmpty()
-    }
+    private val _aiState = MutableStateFlow<AIState>(AIState.Idle)
+    val aiState: StateFlow<AIState> = _aiState.asStateFlow()
 
     fun insertCorrection(correction: CorrectionEntity) {
         viewModelScope.launch {
-            repository.insert(correction)
+            repository.insertCorrection(correction)
         }
     }
 
     fun deleteCorrection(correction: CorrectionEntity) {
         viewModelScope.launch {
-            repository.delete(correction)
+            repository.deleteCorrection(correction)
         }
     }
 
-    private fun seedInitialDataIfEmpty() {
+    fun requestAICorrection(originalText: String) {
         viewModelScope.launch {
-            // 초기 1회성 더미 데이터 삽입 (동작 확인용)
-            if (corrections.value.isEmpty()) {
-                insertCorrection(
-                    CorrectionEntity(
-                        originalText = "오늘 날씨가 매우 조아요.",
-                        correctedText = "오늘 날씨가 매우 좋아요.",
-                        reason = "맞춤법 오류",
-                        userName = "Sarah Jenkins",
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
-                insertCorrection(
-                    CorrectionEntity(
-                        originalText = "나는 내일 영화를 보러 간다 였다.",
-                        correctedText = "나는 내일 영화를 보러 갈 예정이다.",
-                        reason = "어색한 표현",
-                        userName = "Alex Rivera",
-                        timestamp = System.currentTimeMillis() - 100000
-                    )
-                )
+            _aiState.value = AIState.Loading
+            val result = aiRepository.fetchAICorrection(originalText)
+            result.onSuccess { response ->
+                _aiState.value = AIState.Success(response)
+            }.onFailure { error ->
+                _aiState.value = AIState.Error(error.localizedMessage ?: "알 수 없는 오류 발생")
             }
         }
+    }
+
+    fun resetAIState() {
+        _aiState.value = AIState.Idle
     }
 }
