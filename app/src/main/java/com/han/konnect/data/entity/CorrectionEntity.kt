@@ -10,5 +10,6 @@ data class CorrectionEntity(
     val correctedText: String,
     val reason: String,
     val userName: String,
+    val correctionType: String = "NATURAL_EXPRESSION",
     val timestamp: Long
 )
