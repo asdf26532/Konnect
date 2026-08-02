@@ -27,4 +27,25 @@ class UserRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getRecommendedUsers(
+        currentUid: String,
+        targetNativeLanguage: String? = null
+    ): Result<List<UserProfile>> {
+        return try {
+            var query = usersCollection.limit(20)
+
+            if (!targetNativeLanguage.isNull_or_blank()) {
+                query = query.whereEqualTo("nativeLanguage", targetNativeLanguage)
+            }
+
+            val snapshot = query.get().await()
+            val users = snapshot.toObjects(UserProfile::class.java)
+                .filter { it.uid != currentUid }
+
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
