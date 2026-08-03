@@ -30,12 +30,10 @@ class MatchingViewModel : ViewModel() {
 
     private var allRecommendedUsers = listOf<UserProfile>()
 
-    // 추천 파트너 불러오기
     fun fetchRecommendedPartners(currentUid: String) {
         viewModelScope.launch {
             _uiState.value = MatchingUiState.Loading
 
-            // Dummy 샘플 포함 테스트용 (Firestore 연결 실패 시 기본값 리턴용)
             val result = userRepository.getRecommendedUsers(currentUid)
 
             result.onSuccess { users ->
@@ -61,12 +59,10 @@ class MatchingViewModel : ViewModel() {
     private fun applyFilters() {
         var filtered = allRecommendedUsers
 
-        // 1. 언어 필터링
         if (_selectedLanguageFilter.value != "전체") {
             filtered = filtered.filter { it.nativeLanguage == _selectedLanguageFilter.value }
         }
 
-        // 2. 검색어 필터링
         if (_searchQuery.value.isNotBlank()) {
             val q = _searchQuery.value.lowercase()
             filtered = filtered.filter {
