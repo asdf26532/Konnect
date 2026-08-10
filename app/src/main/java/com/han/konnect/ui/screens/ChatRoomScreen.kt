@@ -41,6 +41,9 @@ fun ChatRoomScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    val audioRecorder = remember { AudioRecorder(context) }
+    var isRecording by remember { mutableStateOf(false) }
+
     val messages = remember {
         mutableStateListOf(
             ChatMessage("1", "other", "안녕하세요! 한국어 공부하고 싶어요.", "오후 5:10"),
@@ -79,36 +82,87 @@ fun ChatRoomScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextField(
-                        value = inputText,
-                        onValueChange = { inputText = it },
-                        placeholder = { Text("메시지를 입력하세요...", color = Color.Gray) },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF1F5F9),
-                            unfocusedContainerColor = Color(0xFFF1F5F9),
-                            disabledContainerColor = Color(0xFFF1F5F9),
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        shape = RoundedCornerShape(24.dp),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    IconButton(
-                        onClick = {
-                            if (inputText.trim().isNotEmpty()) {
-                                messages.add(ChatMessage(
-                                    id = System.currentTimeMillis().toString(),
-                                    senderId = "me",
-                                    text = inputText,
-                                    timestamp = "방금"
-                                ))
-                                inputText = ""
+                    if (isRecording) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "🔴 음성 녹음 중...",
+                                    color = Color.Red,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    onClick = {
+                                        val recordedFile = audioRecorder.stopRecording()
+                                        isRecording = false
+                                        recordedFile?.let {
+                                            messages.add(
+                                                ChatMessage(
+                                                    id = System.currentTimeMillis().toString(),
+                                                    senderId = "me",
+                                                    text = "🎤 음성 메시지",
+                                                    timestamp = "방금"
+                                                )
+                                            )
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Stop, contentDescription = "녹음 전송", tint = Color.Red)
+                                }
                             }
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(contentColor = PurpleMain)
-                    ) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "전송")
+                        }
+                    } else {
+                        TextField(
+                            value = inputText,
+                            onValueChange = { inputText = it },
+                            placeholder = { Text("메시지를 입력하세요...", color = Color.Gray) },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF1F5F9),
+                                unfocusedContainerColor = Color(0xFFF1F5F9),
+                                disabledContainerColor = Color(0xFFF1F5F9),
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        if (inputText.isBlank()) {
+                            IconButton(
+                                onClick = {
+                                    isRecording = true
+                                    audioRecorder.startRecording()
+                                },
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = PurpleMain)
+                            ) {
+                                Icon(Icons.Default.Mic, contentDescription = "음성 녹음")
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    messages.add(
+                                        ChatMessage(
+                                            id = System.currentTimeMillis().toString(),
+                                            senderId = "me",
+                                            text = inputText.trim(),
+                                            timestamp = "방금"
+                                        )
+                                    )
+                                    inputText = ""
+                                },
+                                colors = IconButtonDefaults.iconButtonColors(contentColor = PurpleMain)
+                            ) {
+                                Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "전송")
+                            }
+                        }
                     }
                 }
             }
