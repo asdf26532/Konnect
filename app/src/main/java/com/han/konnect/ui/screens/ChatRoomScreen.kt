@@ -44,6 +44,8 @@ fun ChatRoomScreen(
     val audioRecorder = remember { AudioRecorder(context) }
     var isRecording by remember { mutableStateOf(false) }
 
+    var activeCallType by remember { mutableStateOf<CallType?>(null) }
+
     val messages = remember {
         mutableStateListOf(
             ChatMessage("1", "other", "안녕하세요! 한국어 공부하고 싶어요.", "오후 5:10"),
