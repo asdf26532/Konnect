@@ -22,6 +22,9 @@ class ChallengeViewModel : ViewModel() {
     private val _isSubmitted = MutableStateFlow(false)
     val isSubmitted: StateFlow<Boolean> = _isSubmitted.asStateFlow()
 
+    private val _showRewardDialog = MutableStateFlow<Boolean?>(null)
+    val showRewardDialog: StateFlow<Boolean?> = _showRewardDialog.asStateFlow()
+
     val todayChallenge = DailyChallenge(
         id = "c1",
         date = "Today",
@@ -45,12 +48,21 @@ class ChallengeViewModel : ViewModel() {
 
     fun submitAnswer() {
         val selectedId = _selectedOptionId.value ?: return
-        _isSubmitted.value = true
+        if (_isSubmitted.value) return
 
+        _isSubmitted.value = true
         val correctOption = todayChallenge.options.find { it.isCorrect }
+
         if (selectedId == correctOption?.id) {
             _userPoints.update { it + todayChallenge.rewardPoints }
             _streakCount.update { it + 1 }
+            _showRewardDialog.value = true
+        } else {
+            _showRewardDialog.value = false
         }
+    }
+
+    fun dismissRewardDialog() {
+        _showRewardDialog.value = null
     }
 }
