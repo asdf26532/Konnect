@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.han.konnect.ui.components.RadarChart
 import com.han.konnect.ui.theme.PurpleMain
 import com.han.konnect.ui.viewmodel.ReportViewModel
 
@@ -114,6 +115,41 @@ fun ReportScreen(
                 value = "${report.correctionRate}%",
                 color = Color(0xFFF59E0B)
             )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = "🎯 언어 능력 5각 분석",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                RadarChart(
+                    scores = report.skillScores,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                )
+            }
         }
 
     }
