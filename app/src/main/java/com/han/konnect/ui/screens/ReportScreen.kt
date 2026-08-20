@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.han.konnect.ui.components.GrammarErrorCard
 import com.han.konnect.ui.components.RadarChart
 import com.han.konnect.ui.theme.PurpleMain
 import com.han.konnect.ui.viewmodel.ReportViewModel
@@ -152,6 +153,30 @@ fun ReportScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "⚠️ 자주 틀리는 문법 패턴 Top 3",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = "AI 교정 내역에서 자주 반복된 오류 유형입니다.",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            report.topGrammarErrors.forEachIndexed { index, pattern ->
+                GrammarErrorCard(item = pattern, rank = index + 1)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
     }
 }
 
