@@ -2,10 +2,12 @@ package com.han.konnect.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.han.konnect.data.model.MissionGoal
+import com.han.konnect.data.model.RoleplayMessage
 import com.han.konnect.data.model.RoleplayScenario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class RoleplayViewModel : ViewModel() {
 
@@ -56,10 +58,63 @@ class RoleplayViewModel : ViewModel() {
         )
     )
 
-    private val _selectedScenario = MutableStateFlow<RoleplayScenario?>(null)
+    private val _selectedScenario = MutableStateFlow<RoleplayScenario?>(scenarios.first())
     val selectedScenario: StateFlow<RoleplayScenario?> = _selectedScenario.asStateFlow()
+
+    private val _messages = MutableStateFlow<List<RoleplayMessage>>(emptyList())
+    val messages: StateFlow<List<RoleplayMessage>> = _messages.asStateFlow()
+
+    private val _currentHint = MutableStateFlow<String?>(null)
+    val currentHint: StateFlow<String?> = _currentHint.asStateFlow()
 
     fun selectScenario(scenario: RoleplayScenario) {
         _selectedScenario.value = scenario
+
+        _messages.value = listOf(
+            RoleplayMessage(
+                id = "m_init",
+                sender = scenario.aiRole,
+                text = scenario.initialMessage
+            )
+        )
+    }
+
+    fun sendMessage(userText: String) {
+        if (userText.isBlank()) return
+        val currentScenario = _selectedScenario.value ?: return
+
+        val userMsg = RoleplayMessage(
+            id = System.currentTimeMillis().toString(),
+            sender = "User",
+            text = userText
+        )
+        _messages.update { it + userMsg }
+
+        checkMissions(userText)
+
+        val aiReply = RoleplayMessage(
+            id = (System.currentTimeMillis() + 1).toString(),
+            sender = currentScenario.aiRole,
+            text = "네, 알겠습니다! 추가로 필요하신 사항이 있으신가요?"
+        )
+        _messages.update { it + aiReply }
+    }
+
+    private fun checkMissions(text: String) {
+        val scenario = _selectedScenario.value ?: return
+        val updatedGoals = scenario.goals.map { goal ->
+            if (text.contains("아메리카노") || text.contains("아이스") || text.contains("카드") || text.contains("라지")) {
+                goal.copy(isCompleted = true)
+            } else goal
+        }
+        _selectedScenario.value = scenario.copy(goals = updatedGoals)
+    }
+
+    fun requestHint() {
+        _currentHint.value = "💡 힌트: '아이스 아메리카노 라지 사이즈 한 잔 주세요'라고 말해보세요!"
+    }
+
+    fun dismissHint() {
+        _currentHint.value = null
     }
 }
